@@ -1,35 +1,28 @@
 <?php
-/**
+/*************************************************************************
  * Workflow Action Registry
+ *************************************************************************
  *
  * Only actions listed here can be executed by the workflow engine.
  *
- * To add a new reusable action:
- * 1. Create a new file in /actions.
- * 2. Make the class implement WorkflowActionInterface.
- * 3. Require the file below.
- * 4. Add the action key to the returned array.
+ *
+ * Class naming:
+ *     Action_ReportLogs
+ *     Action_EmailContext
+ *     Action_CleanupOldSessions
+ *     Action_TestEcho
  */
-require_once(DOCROOT . '/admin/workflows/classes/WorkflowActionInterface.php');
-require_once(DOCROOT . '/admin/workflows/classes/WorkflowEngine.php');
 
-require_once(DOCROOT . '/admin/workflows/actions/Action_ReportLogs.php');
-require_once(DOCROOT . '/admin/workflows/actions/Action_EmailContext.php');
-require_once(DOCROOT . '/admin/workflows/actions/Action_CleanupOldSessions.php');
+require_once(DOCROOT . '/admin/workflows/classes/actioninterface.php');
+require_once(DOCROOT . '/admin/workflows/classes/engine.php');
 
-	return array(
-		// Collect rows from a log table into workflow context.
-		'report_logs' => 'Action_ReportLogs',
+return array(
+	'email.send' => 'Action_SendEmail',
+	'users.find.new' => 'Action_FindNewUsers',
+    'report_logs' => 'Action_ReportLogs',
+    'email_context' => 'Action_EmailContext',
+	'cleanup_old_sessions' => 'Action_CleanupOldSessions',
+    'test.echo' => 'Action_TestEcho'
 
-		// Send workflow context by email.
-		'email_context' => 'Action_EmailContext',
-
-		// Delete or count old sessions.
-		'cleanup_old_sessions' => 'Action_CleanupOldSessions',
-		
-		//test
-		'test.echo' =>
-			'Action_TestEcho'
-
-	);
+);
 ?>

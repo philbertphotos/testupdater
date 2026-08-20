@@ -135,7 +135,7 @@ class WorkflowEngine
             $workflowKey
         );
 
-        $context['_workflow'] = array(
+        $context['_workflow-engine'] = array(
             'id'      => (int)$workflow->id,
             'key'     => $workflowKey,
             'name'    => isset($workflow->name) ? $workflow->name : '',
@@ -315,7 +315,7 @@ class WorkflowEngine
             return;
         }
 
-        $interfaceFile = $this->workflowRoot . '/classes/WorkflowActionInterface.php';
+        $interfaceFile = $this->workflowRoot . '/classes/actioninterface.php';
 
         if (is_file($interfaceFile)) {
             require_once($interfaceFile);
@@ -326,27 +326,35 @@ class WorkflowEngine
         }
     }
 
-    /**
-     * Load an action class file when the class is not already loaded.
-     *
-     * Example:
-     * Action_TestEcho loads:
-     * /admin/workflows/actions/Action_TestEcho.php
-     *
-     * @param string $className
-     */
-    protected function loadActionClass($className)
-    {
-        if (class_exists($className)) {
-            return;
-        }
+	/**
+	 * Load an action class file when the class is not already loaded.
+	 *
+	 * Examples:
+	 *
+	 * Action_TestEcho
+	 *      => actions/testecho.php
+	 *
+	 * Action_FindNewUsers
+	 *      => actions/findnewusers.php
+	 *
+	 * @param string $className
+	 */
+	protected function loadActionClass($className)
+	{
+		if (class_exists($className)) {
+			return;
+		}
 
-        $file = $this->workflowRoot . '/actions/' . $className . '.php';
+		$fileName = strtolower(
+			preg_replace('/^Action_/', '', $className)
+		);
 
-        if (is_file($file)) {
-            require_once($file);
-        }
-    }
+		$file = $this->workflowRoot . '/actions/' . $fileName . '.php';
+
+		if (is_file($file)) {
+			require_once($file);
+		}
+	}
 
     /**
      * Decode JSON step parameters.
@@ -440,49 +448,95 @@ class WorkflowEngine
         ));
     }
 
-    /**
-     * Write a workflow log entry.
-     *
-     * @param int    $stepId
-     * @param string $actionKey
-     * @param string $status
-     * @param string $message
-     * @param mixed  $data
-     */
-    public function logStep($stepId, $actionKey, $status, $message, $data = null)
-    {
-        if (!$this->runId) {
-            return;
-        }
+	/*************************************************************************
+	 * Workflow Logging
+	 *
+	 * IMPORTANT:
+	 * workflows_logs.step_id is nullable.
+	 * Always write SQL NULL for workflow-level logs
+	 * instead of relying on the generic DB wrapper.
+	 *************************************************************************/
 
-        $this->db->insert('workflows_logs', array(
-            'run_id'     => (int)$this->runId,
-            'step_id'    => $stepId ? (int)$stepId : null,
-            'action_key' => $actionKey,
-            'status'     => $status,
-            'message'    => $message,
-            'data'       => $data === null ? null : json_encode($data),
-            'created'    => date('Y-m-d H:i:s')
-        ));
-    }
+	/**
+	 * Write a workflow log entry.
+	 *
+	 * This method intentionally uses a manual INSERT instead of the generic
+	 * database insert wrapper because workflows_logs.step_id is nullable and
+	 * must be written as SQL NULL when there is no workflow step.
+	 *
+	 * @param int    $stepId
+	 * @param string $actionKey
+	 * @param string $status
+	 * @param string $message
+	 * @param mixed  $data
+	 */
+	public function logStep($stepId, $actionKey, $status, $message, $data = null)
+	{
+		if (!$this->runId) {
+			return;
+		}
 
-    /**
-     * General workflow log helper for non-step logs.
-     *
-     * @param string $status
-     * @param string $message
-     * @param mixed  $data
-     */
-    public function log($status, $message, $data = null)
-    {
-        $this->logStep(
-            0,
-            null,
-            $status,
-            $message,
-            $data
-        );
-    }
+		$stepSql = 'NULL';
+
+		if ($stepId) {
+			$stepSql = "'" . (int)$stepId . "'";
+		}
+
+		$actionKeySql = 'NULL';
+
+		if ($actionKey !== null && $actionKey !== '') {
+			$actionKeySql = "'" . $this->escape($actionKey) . "'";
+		}
+
+		$dataSql = 'NULL';
+
+		if ($data !== null) {
+			$dataSql = "'" . $this->escape(json_encode($data)) . "'";
+		}
+
+		$this->db->query(
+			"INSERT INTO workflows_logs
+			 (
+				 run_id,
+				 step_id,
+				 action_key,
+				 status,
+				 message,
+				 data,
+				 created
+			 )
+			 VALUES
+			 (
+				 '" . (int)$this->runId . "',
+				 " . $stepSql . ",
+				 " . $actionKeySql . ",
+				 '" . $this->escape($status) . "',
+				 '" . $this->escape($message) . "',
+				 " . $dataSql . ",
+				 '" . $this->escape(date('Y-m-d H:i:s')) . "'
+			 )"
+		);
+	}
+
+	/**
+	 * General workflow log helper for non-step logs.
+	 *
+	 * Non-step logs intentionally pass step id 0 so logStep() writes SQL NULL.
+	 *
+	 * @param string $status
+	 * @param string $message
+	 * @param mixed  $data
+	 */
+	public function log($status, $message, $data = null)
+	{
+		$this->logStep(
+			0,
+			null,
+			$status,
+			$message,
+			$data
+		);
+	}
 
     /**
      * Return current run id.
