@@ -5,51 +5,32 @@
  * Workflow action key:
  * email.send
  *
- * Purpose:
- * Send a workflow email using the User Manager mail API and place the
- * result into the workflow context.
+ * Replacement token format:
+ * {context.path}
  *
- * Expected location:
- * /admin/workflows/actions/sendemail.php
+ * Examples:
+ * {verification_cleanup.hours}
+ * {reset_login_count.minutes}
+ * {stats.new_users}
  *
- * Expected PHP class:
- * Action_SendEmail
+ * Replacement tokens are supported in:
+ * to, from, from_name, subject, body, attachments and params.
  *
- * Expected registry entry:
- * 'email.send' => 'Action_SendEmail'
- *
- * Expected workflow URL test:
- * /admin/workflows/api.php?key=email.send
- *
- * Basic step parameters example:
- *
- * {
- *     "to":"admin@vi.gov",
- *     "from":"noreply@vi.gov",
- *     "from_name":"User Manager",
- *     "subject":"User Manager Workflow Report",
- *     "body":"Workflow completed."
- * }
- *
- * Context body example:
- *
- * {
- *     "to":"admin@vi.gov",
- *     "from":"noreply@vi.gov",
- *     "from_name":"User Manager",
- *     "subject":"New User Standards Report",
- *     "body_key":"email_body"
- * }
- *
- * Attachments example:
- *
- * {
- *     "to":"admin@vi.gov",
- *     "from":"noreply@vi.gov",
- *     "subject":"User Manager Report",
- *     "body":"Attached is the workflow report.",
- *     "attachments":["/tmp/report.pdf"]
- * }
+ * Body token values are HTML escaped before replacement. A body loaded with
+ * body_key remains unchanged so a previous action can provide prepared HTML.
+ *	 {
+ *		"to":"{notification.email}",
+ *		"from":"noreply@vi.gov",
+ *		"subject":"Workflow completed for {notification.name}",
+ *		"body":"<p>The workflow completed successfully.</p>"
+ *	}
+ *	{
+ *		"to":"joseph.philbert@bit.vi.gov",
+ *		"from":"noreply@vi.gov",
+ *		"from_name":"User Manager",
+ *		"subject_key":"email_subject",
+ *		"body_key":"email_body"
+ *	}
  *************************************************************************/
 class Action_SendEmail implements WorkflowActionInterface
 {
@@ -64,7 +45,6 @@ class Action_SendEmail implements WorkflowActionInterface
 	 */
 	public function run($context, $params, $engine)
 	{
-		//return echo array('Mail API class not found: pssm_Mail');
 		$this->loadMailApi();
 
 		if (!class_exists('pssm_Mail')) {
@@ -72,11 +52,11 @@ class Action_SendEmail implements WorkflowActionInterface
 		}
 
 		$mail = new pssm_Mail();
-		$to = isset($params['to']) ? $params['to'] : '';
-		$from = isset($params['from']) ? trim((string)$params['from']) : '';
-		$fromName = isset($params['from_name']) ? trim((string)$params['from_name']) : '';
+		$to = isset($params['to']) ? $this->replaceValueTokens($params['to'], $context) : '';
+		$from = isset($params['from']) ? $this->replaceTokens(trim((string)$params['from']), $context) : '';
+		$fromName = isset($params['from_name']) ? $this->replaceTokens(trim((string)$params['from_name']), $context) : '';
 		$subject = $this->getTextValue($params, $context, 'subject', 'subject_key');
-		$body = $this->getTextValue($params, $context, 'body', 'body_key');
+		$body = $this->getTextValue($params, $context, 'body', 'body_key', true);
 
 		if ($body === '') {
 			$body = $this->buildDefaultBody($context);
@@ -101,11 +81,11 @@ class Action_SendEmail implements WorkflowActionInterface
 		$mail->setMessage($body);
 
 		if (isset($params['attachments']) && is_array($params['attachments'])) {
-			$this->addAttachments($mail, $params['attachments']);
+			$this->addAttachments($mail, $this->replaceValueTokens($params['attachments'], $context));
 		}
 
 		if (isset($params['params']) && trim((string)$params['params']) !== '') {
-			$mail->setParameters(trim((string)$params['params']));
+			$mail->setParameters($this->replaceTokens(trim((string)$params['params']), $context));
 		}
 
 		$mail->addGenericHeader('X-Mailer', 'User Manager 3.0');
@@ -241,30 +221,131 @@ class Action_SendEmail implements WorkflowActionInterface
 	}
 
 	/*************************************************************************
+	 * Replacement Token Helpers
+	 *************************************************************************/
+
+	/**
+	 * Replace context tokens in a string.
+	 *
+	 * Token format:
+	 * {context.path}
+	 *
+	 * Missing context paths are left unchanged so configuration mistakes are
+	 * visible in the delivered message instead of being silently removed.
+	 *
+	 * @param string $value
+	 * @param array  $context
+	 * @param bool   $htmlEscape
+	 *
+	 * @return string
+	 */
+	protected function replaceTokens($value, $context, $htmlEscape = false)
+	{
+		$value = (string)$value;
+
+		if ($value === '' || strpos($value, '{') === false) {
+			return $value;
+		}
+
+		return preg_replace_callback(
+			'/\{([a-zA-Z0-9_\.\-]+)\}/',
+			function($matches) use ($context, $htmlEscape) {
+				$replacement = $this->contextValue($context, $matches[1]);
+
+				if ($replacement === null) {
+					return $matches[0];
+				}
+
+				$replacement = $this->tokenValue($replacement);
+
+				if ($htmlEscape) {
+					$replacement = htmlspecialchars($replacement, ENT_QUOTES, 'UTF-8');
+				}
+
+				return $replacement;
+			},
+			$value
+		);
+	}
+
+	/**
+	 * Replace tokens recursively in string or array values.
+	 *
+	 * @param mixed $value
+	 * @param array $context
+	 *
+	 * @return mixed
+	 */
+	protected function replaceValueTokens($value, $context)
+	{
+		if (is_array($value)) {
+			$replaced = array();
+
+			foreach ($value as $key => $item) {
+				$newKey = is_string($key) ? $this->replaceTokens($key, $context) : $key;
+				$replaced[$newKey] = $this->replaceValueTokens($item, $context);
+			}
+
+			return $replaced;
+		}
+
+		if (is_string($value)) {
+			return $this->replaceTokens($value, $context);
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Convert token value to text.
+	 *
+	 * @param mixed $value
+	 *
+	 * @return string
+	 */
+	protected function tokenValue($value)
+	{
+		if (is_bool($value)) {
+			return $value ? 'true' : 'false';
+		}
+
+		if (is_array($value) || is_object($value)) {
+			return json_encode($value);
+		}
+
+		return (string)$value;
+	}
+
+	/*************************************************************************
 	 * Value Helpers
 	 *************************************************************************/
 
 	/**
 	 * Get direct parameter value or context value by key.
 	 *
+	 * Direct subject and body values support replacement tokens. Values loaded
+	 * through subject_key or body_key are returned unchanged for backwards
+	 * compatibility with actions that already prepare complete email content.
+	 *
 	 * @param array  $params
 	 * @param array  $context
 	 * @param string $paramKey
 	 * @param string $contextKey
+	 * @param bool   $htmlEscapeTokens
 	 *
 	 * @return string
 	 */
-	protected function getTextValue($params, $context, $paramKey, $contextKey)
+	protected function getTextValue($params, $context, $paramKey, $contextKey, $htmlEscapeTokens = false)
 	{
 		if (isset($params[$paramKey])) {
-			return trim((string)$params[$paramKey]);
+			return trim($this->replaceTokens((string)$params[$paramKey], $context, $htmlEscapeTokens));
 		}
 
 		if (isset($params[$contextKey])) {
 			$value = $this->contextValue($context, trim((string)$params[$contextKey]));
 
 			if ($value !== null) {
-				return trim((string)$value);
+				return trim($this->tokenValue($value));
 			}
 		}
 
