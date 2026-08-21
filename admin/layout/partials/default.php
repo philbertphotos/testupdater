@@ -19,7 +19,7 @@ if (!is_array($panelGroups) || empty($panelGroups)) {
     return;
 }
 
-foreach ($panelGroups as $key => $configs) {
+	foreach ($panelGroups as $key => $configs) {
 		// Hide internal  info records unless debug mode enabled
 		if ($key == 'info' && (!defined('DEBUG') || !DEBUG)) {
 			continue;
@@ -43,10 +43,7 @@ foreach ($panelGroups as $key => $configs) {
 				foreach ($configs as $config) {
 
 					// Hide internal type info records unless debug mode enabled
-					if (
-						preg_match('/^_[a-z0-9]+_info$/i', $config['name'])
-						&& (!defined('DEBUG') || !DEBUG)
-					) {
+					if (preg_match('/^_[a-z0-9]+_info$/i', $config['name'])	&& (!defined('DEBUG') || !DEBUG)) {
 						continue;
 					}
 

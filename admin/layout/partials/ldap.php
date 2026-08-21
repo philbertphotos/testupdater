@@ -72,8 +72,14 @@ if (!is_array($account_suffix) || empty($account_suffix)) {
                     <div class="row">
                         <?php
                         foreach ($configs as $config) {
+							// Hide internal  info records unless debug mode enabled
+							if ($config['formtype'] == 'info' && (!defined('DEBUG') || !DEBUG)) {
+								continue;
+							}
                             $value = json_decode($config['value'], true);
-
+							if (cfgpanel_is_internal($config['name'])	&& (!defined('DEBUG') || !DEBUG)) {
+								continue;
+							}
                             if (!is_array($value)) {
                                 $value = array();
                             }
