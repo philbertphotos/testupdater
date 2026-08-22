@@ -1,0 +1,406 @@
+/* ==========================================================================
+   User Manager 3.0 - general_base.css
+   Preview build with UM design tokens and global cleanup
+
+   Purpose:
+   - Keep global styles, responsive helpers, accessibility helpers, and shared
+     utility classes in one place.
+   - Provide CSS variables used by User Manager application styles.
+   - Preserve backward compatibility with existing pages.
+
+   Management notes:
+   - Load this file before pssmstyle.css.
+   - Keep page-specific components out of this file unless they are reusable
+     across the entire site.
+   ========================================================================== */
+
+/* Design Tokens ------------------------------------------------------------
+   These variables make colors, spacing, borders, shadows, and typography easier
+   to maintain across Dashboard, Status Hub, Events, Admin, and account pages. */
+:root {
+    --um-primary: #399599;
+    --um-primary-dark: #2b7477;
+    --um-primary-light: #e7f5f5;
+    --um-secondary: #337ab7;
+    --um-navy: #34495e;
+    --um-bg: #337ab7;
+    --um-surface: #ffffff;
+    --um-surface-alt: #f8f9fa;
+    --um-surface-muted: #f4f4f4;
+    --um-text: #333333;
+    --um-text-muted: #6c757d;
+    --um-border: #dee2e6;
+    --um-border-strong: #cccccc;
+    --um-success: #28a745;
+    --um-warning: #ffc107;
+    --um-danger: #dc3545;
+    --um-info: #17a2b8;
+    --um-radius-sm: 4px;
+    --um-radius-md: 8px;
+    --um-radius-lg: 12px;
+    --um-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --um-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --um-space-1: 4px;
+    --um-space-2: 8px;
+    --um-space-3: 12px;
+    --um-space-4: 16px;
+    --um-space-5: 24px;
+    --um-space-6: 32px;
+    --um-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Optional dark theme foundation. Add data-theme="dark" to body or html when
+   the application is ready to support a dark UI. */
+[data-theme="dark"] {
+    --um-bg: #121820;
+    --um-surface: #1f2933;
+    --um-surface-alt: #263442;
+    --um-surface-muted: #202b35;
+    --um-text: #f3f6f8;
+    --um-text-muted: #b7c2cc;
+    --um-border: #3b4856;
+    --um-border-strong: #596775;
+}
+
+/* Accessibility Helpers ---------------------------------------------------- */
+:focus-visible {
+    outline: 3px solid rgba(51, 122, 183, 0.5);
+    outline-offset: 2px;
+}
+
+.um-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Spacing Utilities --------------------------------------------------------
+   Use these for new work instead of one-off margin/padding rules. */
+.um-m-0 { margin: 0 !important; }
+.um-mt-1 { margin-top: var(--um-space-1) !important; }
+.um-mt-2 { margin-top: var(--um-space-2) !important; }
+.um-mt-3 { margin-top: var(--um-space-3) !important; }
+.um-mt-4 { margin-top: var(--um-space-4) !important; }
+.um-mt-5 { margin-top: var(--um-space-5) !important; }
+.um-mb-1 { margin-bottom: var(--um-space-1) !important; }
+.um-mb-2 { margin-bottom: var(--um-space-2) !important; }
+.um-mb-3 { margin-bottom: var(--um-space-3) !important; }
+.um-mb-4 { margin-bottom: var(--um-space-4) !important; }
+.um-mb-5 { margin-bottom: var(--um-space-5) !important; }
+.um-p-0 { padding: 0 !important; }
+.um-p-1 { padding: var(--um-space-1) !important; }
+.um-p-2 { padding: var(--um-space-2) !important; }
+.um-p-3 { padding: var(--um-space-3) !important; }
+.um-p-4 { padding: var(--um-space-4) !important; }
+.um-p-5 { padding: var(--um-space-5) !important; }
+
+/* Layout Utilities --------------------------------------------------------- */
+.um-flex { display: flex; }
+.um-flex-wrap { flex-wrap: wrap; }
+.um-align-center { align-items: center; }
+.um-justify-between { justify-content: space-between; }
+.um-gap-1 { gap: var(--um-space-1); }
+.um-gap-2 { gap: var(--um-space-2); }
+.um-gap-3 { gap: var(--um-space-3); }
+.um-gap-4 { gap: var(--um-space-4); }
+.um-text-muted { color: var(--um-text-muted); }
+.um-text-right { text-align: right; }
+.um-text-center { text-align: center; }
+
+/* Global Styles ------------------------------------------------------------ */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    background-color: #337ab7;
+    background-size: cover;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+small {
+    font-size: 0.85em;
+}
+
+blockquote {
+    font-size: 14px;
+    font-style: italic;
+    line-height: 1.25;
+    padding: 5px 5px 5px 10px;
+}
+
+/* Body padding adjusts for fixed navigation. ------------------------------ */
+@media screen and (max-width: 640px) {
+    body {
+        padding: 70px 25px 25px;
+    }
+}
+
+@media screen and (min-width: 641px) {
+    body {
+        padding: 30px 25px 25px;
+    }
+}
+
+/* Background image positioning helper. ------------------------------------ */
+@media screen and (max-width: 1024px) {
+    img.bg {
+        left: 50%;
+        margin-left: -512px;
+    }
+}
+
+/* Logo sizing -------------------------------------------------------------- */
+#logo img {
+    max-height: 83px;
+    width: auto;
+}
+
+@media screen and (max-width: 640px) {
+    #logo img {
+        max-height: 60px;
+    }
+}
+
+/* Global Helpers ---------------------------------------------------------- */
+.spacer-top {
+    margin-top: 20px;
+}
+
+.spacer-bottom {
+    margin-bottom: 20px;
+}
+
+.row.row-grid [class*="col-"] + [class*="col-"] {
+    margin-top: 15px;
+}
+
+@media (min-width: 768px) {
+    .row.row-grid [class*="col-sm-"] + [class*="col-sm-"] {
+        margin-top: 10px;
+    }
+}
+
+@media (min-width: 992px) {
+    .row.row-grid [class*="col-md-"] + [class*="col-md-"] {
+        margin-top: 10px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .row.row-grid [class*="col-lg-"] + [class*="col-lg-"] {
+        margin-top: 10px;
+    }
+}
+
+/* Frontpage ---------------------------------------------------------------- */
+.countdown {
+    display: inline;
+    color: #993030;
+    font-family: Verdana, sans-serif, Arial;
+    font-size: 30px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.banner {
+    background-size: auto 100%;
+    text-align: center;
+    margin-top: 20px;
+    transition: all 1s ease;
+}
+
+.banner:hover {
+    background-size: auto 120%;
+}
+
+.banner h1 {
+    font-size: 64px !important;
+    text-transform: uppercase;
+    margin: 24px 0;
+}
+
+/* Content Area ------------------------------------------------------------ */
+.content {
+    margin-top: 25px;
+    background-color: #f4f4f4;
+    border-radius: 4px;
+    display: block;
+}
+
+/* Ordered List Rectangle Style ------------------------------------------- */
+ol {
+    counter-reset: li;
+    list-style: none;
+    padding: 0;
+    margin-bottom: 4em;
+}
+
+ol ol {
+    margin: 0 0 0 2em;
+}
+
+/* Error Pages ------------------------------------------------------------- */
+.error {
+    background-color: aliceblue;
+}
+
+.error-header {
+    background: #fff;
+    height: 180px;
+}
+
+.error-container {
+    background: rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.error-container h1 {
+    color: #39bbdb;
+    font-size: 110px;
+    font-weight: 300;
+    margin: -103px 0 0;
+    text-align: center;
+}
+
+.error-divider {
+    margin-top: 10px;
+    padding: 30px 0;
+}
+
+.error-container h2 {
+    font-size: 58px;
+    font-weight: 300;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.error-container p.description {
+    color: #db1b1b;
+    font-size: 40px;
+    margin: 50px;
+}
+
+.return-btn,
+.return-btn:hover {
+    border: 1px solid rgb(57, 149, 153);
+    padding: 10px 15px;
+    margin-top: 100px;
+    margin-bottom: 30px;
+    display: inline-block;
+    border-radius: 5px;
+    background-clip: padding-box;
+    font-size: 16px;
+    font-weight: 300;
+}
+
+/* Keep underline behavior accessible by default.
+   Restrict no-underline style to UI controls instead of all links. */
+.btn:hover,
+.nav a:hover,
+.return-btn:hover {
+    text-decoration: none;
+}
+
+/* Rows Equal Height ------------------------------------------------------- */
+.row-eq-height {
+    display: flex;
+}
+
+/* Loading Overlay --------------------------------------------------------- */
+.fa-loading-bg,
+.fa-loading-icon-wrapper {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.fa-loading-bg {
+    top: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+}
+
+.fa-loading-icon-wrapper {
+    z-index: 999999;
+    top: 50%;
+    text-align: center;
+}
+
+.fa-loading-icon {
+    margin-top: -2.5em;
+    font-size: 5em;
+    color: #fff;
+}
+
+/* jQuery UI Autocomplete/Menu -------------------------------------------- */
+.ui-menu {
+    width: 200px;
+    margin: 0 0 2em;
+    list-style: none;
+    padding: 2px;
+    display: block;
+    outline: none;
+}
+
+.ui-autocomplete {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: default;
+}
+
+.ui-corner-all {
+    border-radius: 4px;
+}
+
+.ui-widget-content {
+    border: 1px solid #aaa;
+    background: #fff url("images/ui-bg_glass_75_ffffff_1x400.png") 50% 50% repeat-x;
+    color: #404040;
+}
+
+.ui-widget {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+}
+
+.ui-front {
+    z-index: 100;
+}
+
+.ui-menu .ui-menu-item {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    list-style: none;
+}
+
+.ui-menu .ui-menu-item a.ui-corner-all {
+    border-radius: 0;
+}
+
+.ui-menu .ui-menu-item a {
+    text-decoration: none;
+    display: block;
+    padding: 2px 0.4em;
+    line-height: 1.5;
+    min-height: 0;
+    font-weight: normal;
+}
